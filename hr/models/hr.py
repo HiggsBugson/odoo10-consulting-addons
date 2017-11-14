@@ -157,6 +157,8 @@ class Employee(models.Model):
              "resized as a 64x64px image, with aspect ratio preserved. "
              "Use this field anywhere a small image is required.")
 
+    timesheet_product = fields.Many2one('product.template', string='Timesheet Product')
+
     @api.constrains('parent_id')
     def _check_parent_id(self):
         for employee in self:
