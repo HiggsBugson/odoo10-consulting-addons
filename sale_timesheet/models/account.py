@@ -1,8 +1,11 @@
+
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, models
 from odoo.exceptions import ValidationError
+import logging
+logger = logging.getLogger(__name__)
 
 class AccountAnalyticLine(models.Model):
     _inherit = 'account.analytic.line'
@@ -53,6 +56,15 @@ class AccountAnalyticLine(models.Model):
     def _get_sale_order_line(self, vals=None):
         result = dict(vals or {})
         if self.project_id:
+            #IF THERE IS NO SALE ORDER, GET COST PRICE FROM PRODUCT
+            so = self.env['sale.order'].search([('project_id','=',self.account_id.id)])
+            if not so:
+                #result.update(self._get_timesheet_cost(result))
+                if result.get('amount')==0.0:
+                	result.update({'amount' : -result.get('unit_amount')*(self.env['product.template'].search([('id','=',result.get('product_id'))])).standard_price})
+                logger.error("ILJA DEBUG: %s", result )
+                return super(AccountAnalyticLine, self)._get_sale_order_line(vals=result)
+            #IF THERE IS A SALE ORDER GET DATA FROM THE SALE_ORDER LINES MENTIONING CURRENT PRODUCT
             if result.get('so_line'):
                 sol = self.env['sale.order.line'].browse([result['so_line']])
             else:
@@ -70,8 +82,11 @@ class AccountAnalyticLine(models.Model):
                 result.update({
                     'so_line': sol.id,
                     'product_id': sol.product_id.id,
+                    'amount': -(sol.product_id.standard_price)*result.get('unit_amount')
                 })
-                result.update(self._get_timesheet_cost(result))
+                if result.get('amount')==-0.0:
+                    result.update(self._get_timesheet_cost(result))
+                logger.error("ILJA DEBUG2: %s",result)
             else:
-                raise ValidationError("You can not record time on this project because your worktime product can not be found in the Sale Order.")
+               raise ValidationError("You can not record time on this project because your worktime product can not be found in the Sale Order.")
         return super(AccountAnalyticLine, self)._get_sale_order_line(vals=result)
