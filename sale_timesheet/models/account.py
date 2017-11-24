@@ -4,8 +4,6 @@
 
 from odoo import api, models
 from odoo.exceptions import ValidationError
-import logging
-logger = logging.getLogger(__name__)
 
 class AccountAnalyticLine(models.Model):
     _inherit = 'account.analytic.line'
@@ -62,7 +60,6 @@ class AccountAnalyticLine(models.Model):
                 #result.update(self._get_timesheet_cost(result))
                 if result.get('amount')==0.0:
                 	result.update({'amount' : -result.get('unit_amount')*(self.env['product.template'].search([('id','=',result.get('product_id'))])).standard_price})
-                logger.error("ILJA DEBUG: %s", result )
                 return super(AccountAnalyticLine, self)._get_sale_order_line(vals=result)
             #IF THERE IS A SALE ORDER GET DATA FROM THE SALE_ORDER LINES MENTIONING CURRENT PRODUCT
             if result.get('so_line'):
@@ -86,7 +83,6 @@ class AccountAnalyticLine(models.Model):
                 })
                 if result.get('amount')==-0.0:
                     result.update(self._get_timesheet_cost(result))
-                logger.error("ILJA DEBUG2: %s",result)
             else:
                raise ValidationError("You can not record time on this project because your worktime product can not be found in the Sale Order.")
         return super(AccountAnalyticLine, self)._get_sale_order_line(vals=result)
